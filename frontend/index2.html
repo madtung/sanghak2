@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>자율학습실 현황</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <!-- 1. Babel transpiler to run TSX in browser -->
+    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+    <!-- 2. Import Map for React modules -->
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0?jsx-runtime=automatic",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <!-- 3. All application code consolidated and transpiled by Babel -->
+    <script type="text/babel" data-type="module">
+      import React, { useState, useEffect, useCallback, createContext, useContext, useMemo, useRef } from 'react';
+      import ReactDOM from 'react-dom/client';
+
+      // --- Inlined from types.ts ---
+      const LogType = {
+        INDIVIDUAL: '개인',
+        GROUP: '공동',
+      };
+      const Tab = {
+        SEAT_RESERVATION: '좌석 예약',
+        STUDY_ROOM_RESERVATION: '공동학습실 예약',
+        STATUS: '현황',
+        ADMIN: '관리자페이지',
+      };
+
+      // --- Inlined from constants.ts ---
+      const GRID_UNIT = 60;
+      const gridLayout = [
+        { id: 49, row: 1, col: 1, type: 'seat' }, { id: 50, row: 1, col: 2, type: 'seat' }, { id: 51, row: 1, col: 3, type: 'seat' }, { id: 52, row: 1, col: 4, type: 'seat' }, { id: 53, row: 1, col: 5, type: 'seat' }, { id: 1, row: 1, col: 10, type: 'seat' }, { id: 2, row: 1, col: 11, type: 'seat' }, { id: 3, row: 1, col: 12, type: 'seat' }, { id: 4, row: 1, col: 13, type: 'seat' }, { id: 5, row: 1, col: 14, type: 'seat' }, { id: 6, row: 1, col: 15, type: 'seat' }, { id: '7A', row: 1, col: 16, type: 'seat' },
+        { id: '7B', row: 2, col: 16, type: 'seat' },
+        { id: 48, row: 4, col: 1, type: 'seat' }, { id: 44, row: 4, col: 2, type: 'seat' }, { id: 40, row: 4, col: 3, type: 'seat' }, { id: 36, row: 4, col: 4, type: 'seat' }, { id: 32, row: 4, col: 5, type: 'seat' }, { id: 28, row: 4, col: 8, type: 'seat' }, { id: 24, row: 4, col: 9, type: 'seat' }, { id: 20, row: 4, col: 10, type: 'seat' }, { id: 16, row: 4, col: 11, type: 'seat' }, { id: 8, row: 4, col: 15, type: 'seat' },
+        { id: 47, row: 5, col: 1, type: 'seat' }, { id: 43, row: 5, col: 2, type: 'seat' }, { id: 39, row: 5, col: 3, type: 'seat' }, { id: 35, row: 5, col: 4, type: 'seat' }, { id: 31, row: 5, col: 5, type: 'seat' }, { id: 27, row: 5, col: 8, type: 'seat' }, { id: 23, row: 5, col: 9, type: 'seat' }, { id: 19, row: 5, col: 10, type: 'seat' }, { id: 15, row: 5, col: 11, type: 'seat' }, { id: 9, row: 5, col: 15, type: 'seat' },
+        { id: 46, row: 6, col: 1, type: 'seat' }, { id: 42, row: 6, col: 2, type: 'seat' }, { id: 38, row: 6, col: 3, type: 'seat' }, { id: 34, row: 6, col: 4, type: 'seat' }, { id: 30, row: 6, col: 5, type: 'seat' }, { id: 26, row: 6, col: 8, type: 'seat' }, { id: 22, row: 6, col: 9, type: 'seat' }, { id: 18, row: 6, col: 10, type: 'seat' }, { id: 14, row: 6, col: 11, type: 'seat' }, { id: 10, row: 6, col: 15, type: 'seat' },
+        { id: 45, row: 7, col: 1, type: 'seat' }, { id: 41, row: 7, col: 2, type: 'seat' }, { id: 37, row: 7, col: 3, type: 'seat' }, { id: 33, row: 7, col: 4, type: 'seat' }, { id: 29, row: 7, col: 5, type: 'seat' }, { id: 25, row: 7, col: 8, type: 'seat' }, { id: 21, row: 7, col: 9, type: 'seat' }, { id: 17, row: 7, col: 10, type: 'seat' }, { id: 13, row: 7, col: 11, type: 'seat' }, { id: 11, row: 7, col: 15, type: 'seat' },
+        { id: 12, row: 8, col: 15, type: 'seat' },
+        { id: 'LABEL_SR1', row: 4, col: 6, rowSpan: 2, colSpan: 2, type: 'label', text: '공동 학습 1실' }, { id: 'LABEL_SR2', row: 6, col: 6, rowSpan: 2, colSpan: 2, type: 'label', text: '공동 학습 2실' }, { id: 'LABEL_T', row: 10, col: 6, rowSpan: 1, colSpan: 2, type: 'label', text: '교사 책상' },
+      ];
+      const INITIAL_SEAT_LAYOUT = gridLayout.map(item => ({ id: item.id, type: item.type, text: item.text, x: (item.col - 1) * GRID_UNIT, y: (item.row - 1) * GRID_UNIT, width: (item.colSpan || 1) * GRID_UNIT, height: (item.rowSpan || 1) * GRID_UNIT, }));
+      const TOTAL_SEATS = 53;
+      const INITIAL_ADMIN_PASSWORD = '1111';
+      const STUDY_ROOM_COUNT = 2;
+      const generateTimeSlots = (startHour, endHour, interval) => {
+        const slots = [];
+        for (let hour = startHour; hour <= endHour; hour++) {
+          for (let minute = 0; minute < 60; minute += interval) {
+            if (hour === endHour && minute > 0) break;
+            const h = hour.toString().padStart(2, '0');
+            const m = minute.toString().padStart(2, '0');
+            slots.push(`${h}:${m}`);
+          }
+        }
+        return slots;
+      };
+      const TIME_SLOTS = generateTimeSlots(9, 22, 30);
+      
+      // --- Inlined from services/excelService.ts ---
+      const importStudentsFromExcel = (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            try {
+              const data = event.target?.result;
+              if (!data) {
+                return reject(new Error("파일을 읽을 수 없습니다."));
+              }
+              const uint8array = new Uint8Array(data);
+              const workbook = XLSX.read(uint8array, { type: 'array' });
+              const sheetName = workbook.SheetNames[0];
+              const worksheet = workbook.Sheets[sheetName];
+              const json = XLSX.utils.sheet_to_json(worksheet);
+              const students = json.map(row => ({ studentId: String(row['학번'] || ''), name: String(row['이름'] || ''), barcode: String(row['고유코드(바코드)'] || ''), })).filter(s => s.studentId && s.name && s.barcode);
+              resolve(students);
+            } catch (error) {
+              console.error("Excel import error:", error);
+              reject(new Error("엑셀 파일을 처리하는 중 오류가 발생했습니다. 파일의 첫 줄에 '학번', '이름', '고유코드(바코드)' 헤더가 있는지 확인해주세요."));
+            }
+          };
+          reader.onerror = (error) => reject(error);
+          reader.readAsArrayBuffer(file);
+        });
+      };
+      const exportLogsToExcel = (logs) => {
+        const individualLogs = logs.filter(log => log.type === LogType.INDIVIDUAL).map(log => {
+            if (log.type === LogType.INDIVIDUAL) { return { '입력일시': log.timestamp, '학번': log.studentId, '이름': log.name, '입실/퇴실': log.action, '예약 시간(H)': log.duration ?? '', }; }
+            return {};
+        });
+        const groupLogs = logs.filter(log => log.type === LogType.GROUP).map(log => {
+            if (log.type === LogType.GROUP) { return { '입력일시': log.timestamp, '학번': log.studentId, '이름': log.name, '예약 날짜': log.reservationDate, '예약 시간': log.reservationTime, '이용 인원': log.attendees, }; }
+            return {};
+        });
+        const wb = XLSX.utils.book_new();
+        const wsIndividual = XLSX.utils.json_to_sheet(individualLogs);
+        const wsGroup = XLSX.utils.json_to_sheet(groupLogs);
+        XLSX.utils.book_append_sheet(wb, wsIndividual, '개인 로그');
+        XLSX.utils.book_append_sheet(wb, wsGroup, '공동 로그');
+        XLSX.writeFile(wb, `자율학습실_로그_${new Date().toISOString().split('T')[0]}.xlsx`);
+      };
+
+      // --- Inlined from App.tsx ---
+      const DEFAULT_LOGO_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAUoSURBVHgB7Zz/axtVFMd/585rC+1tC22lFChUHGql8QOEYKviIKg4iA4qToJdKSLqShFFR3+AYpsoCC4iToILgksdHRU7qIdKxQElKdpS2/b2trfXvXfuybk3Od1rC73Xu/eS5Ey+k3u/e8+553LvnXPvEIhEIpFIJBKJRCKRSCQSiUQikUgkEolEIpFIJBKJ5A8Lw0H/QYdYBq8k2K9C2v/fY+A0WJ+0/7/EwNdi9g/M/wAx8KvY/xPzPwI8LwD8U+z/L+L/LPAwAPC/2P8n4o8kfpL4kYg/k/gpzIuI/xPzL0k/J4o6j/gnxP9M/B8R/xLxD4n/I/k84nMRHyO+kPgzid+KeBHinRLvKxW9o6h/QvwK4pcSv49Y5cTHIm4i8d4S71u8yYj/I/k84pMRD4pY5VdE/CXiDxHfSnwR8cOIj0S8MGLxPxFvi/h+xEcRj4l4XcS/Tfwt4nURjyM+GPGi4H4t8ZWItyLeF/HBiI9HvCzi+xE/jPgCxCsiXor4l8RzIh6O+M+IFyB+iHhBxMciHol4SeIFiJciXon4fMQLcC+BeAXueRAvRLwA9wLEKxDvRLwA9wLccyBeiHsF4gW4lyFehHgB7s0RL8Q9BeLFiBfgXoJ4BeLFiBfgXol4EeKFiBfgXo54AeLFiBfgXoh4IeKFiBdi/gHxQtwLEK9AvAD3IsQLcC+BeBXihbiXIF4Ae1VEC3AvRbwA9yLEyxEviHhB4oWIl+Jehngh4hWIFyBehngB4hWIFyJehngB4oWIl+FehngB4vWIL8A9C/BCxCsQL0G8AvEKxCvAVyBeQLwC8QrEKxAvQLwC8QrE8xAvQLwA8QrE8xAvQLwC8QLEyxAvQLwA8QLEyxAvAK9AvA7xCvAKxOsQr0C8AvEKxOsQrwBcgXgV4lWIFyBehXgV4gXIF4BXIF6FeAXiFYhXIF6FeAXiFYhXIF6FeAXiFYhXIF6FeAViBYgXIF6BYgXIFyBWgHgF4hUgVoB4BeIVIFYAeAXiFYhXAF4BeIViFYgXAF4hXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BeIViFcgXoV4BEIpFIJBKJRCKRSCQSiUQikUgkEolEIpFIJBKJRCKRSCQSiUQikUgkEolEIpFIJBKJ5J8B/wKz/1p+W2G2+QAAAABJRU5ErkJggg==';
+      const useLocalStorage = (key, initialValue) => {
+        const [storedValue, setStoredValue] = useState(() => {
+          try {
+            const item = window.localStorage.getItem(key);
+            return item ? JSON.parse(item) : initialValue;
+          } catch (error) {
+            console.error("Error reading from localStorage", error);
+            return initialValue;
+          }
+        });
+
+        useEffect(() => {
+            const handleStorageChange = (e) => {
+                if (e.key === key) {
+                    try {
+                        setStoredValue(e.newValue ? JSON.parse(e.newValue) : initialValue);
+                    } catch (error) {
+                        console.error("Error parsing new value from localStorage", error);
+                        setStoredValue(initialValue);
+                    }
+                }
+            };
+
+            window.addEventListener('storage', handleStorageChange);
+            return () => {
+                window.removeEventListener('storage', handleStorageChange);
+            };
+        }, [key, initialValue]);
+
+        const setValue = (value) => {
+          try {
+            const valueToStore = value instanceof Function ? value(storedValue) : value;
+            setStoredValue(valueToStore);
+            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+          } catch (error) {
+            console.error("Error writing to localStorage", error);
+          }
+        };
+        return [storedValue, setValue];
+      };
+      const AppContext = createContext(null);
+      const useAppContext = () => {
+        const context = useContext(AppContext);
+        if (!context) throw new Error("useAppContext must be used within an AppProvider");
+        return context;
+      };
+      const Modal = ({ isOpen, onClose, children, title }) => {
+        if (!isOpen) return null;
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+                <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+              </div>
+              <div className="p-6 overflow-y-auto">{children}</div>
+            </div>
+          </div>
+        );
+      };
+      const SeatLayoutGrid = ({ layout, onSeatClick, activeReservations, isClickable = false, isEditMode = false, onDrop }) => {
+          const draggedItemInfo = useRef({ id: null, offsetX: 0, offsetY: 0 });
+          const getSeatStyle = (seatId) => {
+              const reservationInfo = activeReservations?.get(seatId);
+              if (reservationInfo) {
+                  return { base: 'bg-green-500 text-white', content: ( <> <span className="text-sm mt-1 truncate">{reservationInfo.studentId}</span> {reservationInfo.remainingTime && <span className="text-xs mt-0.5 truncate">{reservationInfo.remainingTime}</span>} </> ) };
+              }
+              return { base: isClickable ? 'bg-white text-gray-400 border border-gray-300 hover:bg-gray-100' : 'bg-gray-200 text-gray-500', content: null };
+          };
+          const handleDragStart = (e, item) => {
+              draggedItemInfo.current = { id: item.id, offsetX: e.clientX - e.currentTarget.getBoundingClientRect().left, offsetY: e.clientY - e.currentTarget.getBoundingClientRect().top, };
+              e.dataTransfer.effectAllowed = 'move';
+          };
+          const handleDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+          const handleDrop = (e) => {
+              e.preventDefault();
+              if (draggedItemInfo.current.id !== null) {
+                  const containerRect = e.currentTarget.getBoundingClientRect();
+                  let newX = e.clientX - containerRect.left - draggedItemInfo.current.offsetX;
+                  let newY = e.clientY - containerRect.top - draggedItemInfo.current.offsetY;
+                  const SNAP_GRID = 10;
+                  newX = Math.round(newX / SNAP_GRID) * SNAP_GRID;
+                  newY = Math.round(newY / SNAP_GRID) * SNAP_GRID;
+                  onDrop?.(draggedItemInfo.current.id, newX, newY);
+                  draggedItemInfo.current = { id: null, offsetX: 0, offsetY: 0 };
+              }
+          };
+          const layoutWidth = Math.max(...layout.map(item => item.x + item.width));
+          const layoutHeight = Math.max(...layout.map(item => item.y + item.height));
+          return (
+              <div className="relative" style={{ width: layoutWidth, height: layoutHeight }} onDragOver={isEditMode ? handleDragOver : undefined} onDrop={isEditMode ? handleDrop : undefined}>
+                  {layout.map((item) => {
+                      const style = { position: 'absolute', left: item.x, top: item.y, width: item.width, height: item.height, };
+                      const commonProps = { key: item.id, style: style, draggable: isEditMode, onDragStart: isEditMode ? (e) => handleDragStart(e, item) : undefined, };
+                      if (item.type === 'label') { return ( <div {...commonProps} className={`rounded-md bg-gray-300 flex items-center justify-center text-lg font-bold p-2 z-10 select-none ${isEditMode ? 'cursor-move' : ''}`}> {item.text} </div> ); }
+                      const { base, content } = getSeatStyle(item.id);
+                      return ( <button {...commonProps} onClick={() => isClickable && onSeatClick?.(item.id)} disabled={!isClickable && !isEditMode} className={`min-h-[4.5rem] rounded-md flex flex-col items-center justify-center font-bold text-lg transition z-10 ${base} ${isClickable ? 'cursor-pointer' : ''} ${isEditMode ? 'cursor-move' : ''}`}> <span>{item.id}</span> {content} </button> );
+                  })}
+              </div>
+          );
+      };
+      const StatusPage = () => {
+          const { students, seatReservations, studyRoomReservations, seatLayout } = useAppContext();
+          const getStudentInfo = useCallback((barcode) => students.find(s => s.barcode === barcode), [students]);
+          const [currentTime, setCurrentTime] = useState(new Date());
+          useEffect(() => {
+              const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+              return () => clearInterval(timer);
+          }, []);
+          const todayStr = new Date().toISOString().split('T')[0];
+          const todaysStudyRoomReservations = studyRoomReservations.filter(r => r.date === todayStr).sort((a,b) => a.startTime.localeCompare(b.startTime));
+          const activeReservations = useMemo(() => {
+              const active = new Map();
+              seatReservations.forEach(res => {
+                  const student = getStudentInfo(res.studentBarcode);
+                  if (student) {
+                      const [endHour, endMinute] = res.endTime.split(':').map(Number);
+                      const endDate = new Date(currentTime);
+                      endDate.setHours(endHour, endMinute, 0, 0);
+                      let remainingTime = '종료';
+                      if (endDate > currentTime) {
+                          const diffMinutes = Math.round((endDate.getTime() - currentTime.getTime()) / (1000 * 60));
+                          if (diffMinutes > 0) {
+                              const hours = Math.floor(diffMinutes / 60);
+                              const minutes = diffMinutes % 60;
+                              const paddedMinutes = String(minutes).padStart(2, '0');
+                              remainingTime = `${hours}:${paddedMinutes} 남음`;
+                          }
+                      }
+                      active.set(res.seatNumber, { studentId: student.studentId, remainingTime });
+                  }
+              });
+              return active;
+          }, [seatReservations, getStudentInfo, currentTime]);
+          const containerRef = useRef(null);
+          const [transformStyle, setTransformStyle] = useState({});
+          const layoutWidth = useMemo(() => Math.max(...seatLayout.map(item => item.x + item.width)), [seatLayout]);
+          const layoutHeight = useMemo(() => Math.max(...seatLayout.map(item => item.y + item.height)), [seatLayout]);
+          useEffect(() => {
+            const observer = new ResizeObserver(entries => {
+              for (let entry of entries) {
+                const { width } = entry.contentRect;
+                if (layoutWidth > 0 && width > 0) {
+                  const scale = Math.min((width - 16) / layoutWidth, 1);
+                  setTransformStyle({ transform: `scale(${scale})`, transformOrigin: 'top left', height: layoutHeight * scale, width: layoutWidth, });
+                }
+              }
+            });
+            const currentRef = containerRef.current;
+            if (currentRef) { observer.observe(currentRef); }
+            return () => { if (currentRef) { observer.unobserve(currentRef); } };
+          }, [layoutWidth, layoutHeight]);
+          return (
+              <div className="space-y-8">
+                  <h1 className="text-4xl font-bold text-center">자율학습실 현황</h1>
+                  <div className="flex justify-center">
+                      <div ref={containerRef} className="bg-white p-4 rounded-xl shadow-md">
+                          <h2 className="text-2xl font-bold mb-4 text-center">개인 좌석 현황</h2>
+                          <div style={transformStyle}> <SeatLayoutGrid layout={seatLayout} activeReservations={activeReservations} /> </div>
+                      </div>
+                  </div>
+                  <div>
+                      <h2 className="text-2xl font-bold mb-4 text-center">오늘의 공동학습실 예약 현황</h2>
+                      <div className="grid md:grid-cols-2 gap-6">
+                          {Array.from({length: STUDY_ROOM_COUNT}, (_, i) => i + 1).map(roomNum => (
+                              <div key={roomNum} className="bg-white p-4 rounded-xl shadow-md">
+                                  <h3 className="text-lg font-semibold mb-3 text-center border-b pb-2">공동학습실 {roomNum}</h3>
+                                  <ul className="space-y-2">
+                                      {todaysStudyRoomReservations.filter(r => r.roomNumber === roomNum).length > 0 ? (
+                                          todaysStudyRoomReservations.filter(r => r.roomNumber === roomNum).map(res => {
+                                              const student = getStudentInfo(res.studentBarcode);
+                                              return ( <li key={res.id} className="bg-green-50 p-3 rounded-md text-sm"> <span className="font-bold text-green-800">{res.startTime} - {res.endTime}</span> <span className="ml-4">{student?.name} ({student?.studentId})</span> <span className="ml-2 text-gray-600">({res.attendees}명)</span> </li> );
+                                          })
+                                      ) : ( <p className="text-center text-gray-500 py-4">예약이 없습니다.</p> )}
+                                  </ul>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              </div>
+          );
+      };
+      
+      function App() {
+        const [students, setStudents] = useLocalStorage('students', []);
+        const [seatReservations, setSeatReservations] = useLocalStorage('seat_reservations', []);
+        const [studyRoomReservations, setStudyRoomReservations] = useLocalStorage('studyroom_reservations', []);
+        const [logs, setLogs] = useLocalStorage('logs', []);
+        const [adminPassword, setAdminPassword] = useLocalStorage('admin_password', INITIAL_ADMIN_PASSWORD);
+        const [seatLayout, setSeatLayout] = useLocalStorage('seat_layout', INITIAL_SEAT_LAYOUT);
+        const [logoUrl, setLogoUrl] = useLocalStorage('logo_url', DEFAULT_LOGO_URL);
+        const [announcements, setAnnouncements] = useLocalStorage('announcements', '<h2>📢 상학재 공지사항</h2><p>첫 방문을 환영합니다. 규칙을 잘 지켜주세요.</p><ul><li>정숙 유지</li><li>음식물 반입 금지</li><li>퇴실 시 자리 정리</li></ul>');
+        
+        const addLog = useCallback((log) => { setLogs(prev => [log, ...prev]); }, [setLogs]);
+        const findStudentByBarcode = useCallback((barcode) => { return students.find(s => s.barcode === barcode); }, [students]);
+        const findStudentByStudentId = useCallback((studentId) => { return students.find(s => s.studentId === studentId); }, [students]);
+        
+        const contextValue = { students, setStudents, seatReservations, setSeatReservations, studyRoomReservations, setStudyRoomReservations, logs, addLog, adminPassword, setAdminPassword, findStudentByBarcode, findStudentByStudentId, seatLayout, setSeatLayout, logoUrl, setLogoUrl, announcements, setAnnouncements };
+        
+        return (
+          <AppContext.Provider value={contextValue}>
+            <div className="flex flex-col h-screen bg-gray-100 font-sans text-gray-800">
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8"> 
+                    <StatusPage /> 
+                </main>
+            </div>
+          </AppContext.Provider>
+        );
+      }
+
+      // --- Inlined from index.tsx ---
+      const rootElement = document.getElementById('root');
+      if (!rootElement) {
+        throw new Error("Could not find root element to mount to");
+      }
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(
+        <React.StrictMode>
+          <App />
+        </React.StrictMode>
+      );
+    </script>
+  </body>
+</html>
